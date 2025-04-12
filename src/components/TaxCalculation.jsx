@@ -26,7 +26,7 @@ const { Option } = Select;
 const { Title } = Typography;
 
 // API base URL
-const API_URL = 'http://localhost:5000/api/tax';
+const API_URL = 'https://tax-calculator-backend-skph.onrender.com/api/tax';
 
 // Create a custom axios instance that doesn't log errors to console
 const silentAxios = axios.create();
@@ -35,7 +35,7 @@ const silentAxios = axios.create();
 const originalConsoleError = console.error;
 console.error = function(message, ...args) {
   if (typeof message === 'string' && 
-      (message.includes('http://localhost:5000/api/tax') || 
+      (message.includes('https://tax-calculator-backend-skph.onrender.com/api/tax') || 
        message.startsWith('Error calculating tax'))) {
     // Suppress these specific errors
     return;
