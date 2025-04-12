@@ -15,7 +15,8 @@ import {
   Spin,
   Alert,
   Tabs,
-  Statistic
+  Statistic,
+  Tag
 } from 'antd';
 import dayjs from 'dayjs';
 import axios from 'axios';
@@ -51,6 +52,8 @@ const TaxCalculationPage = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [errorMessage, setErrorMessage] = useState('');
   const [activeTab, setActiveTab] = useState('1');
+  const [existingGstTypes, setExistingGstTypes] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
 
   // Fetch all tax records when component mounts
   useEffect(() => {
@@ -90,6 +93,35 @@ const TaxCalculationPage = () => {
       setErrorMessage('Failed to fetch tax records. Please try again later.');
     } finally {
       setFetchLoading(false);
+    }
+  };
+
+  // Function to check existing GST types for a selected date
+  const checkExistingGstTypes = (date) => {
+    if (!date) {
+      setExistingGstTypes([]);
+      return;
+    }
+    
+    const formattedDate = date.format('YYYY-MM-DD');
+    setSelectedDate(formattedDate);
+    
+    // Find all records for this date
+    const recordsForDate = taxRecords.filter(record => 
+      record.fromDate === formattedDate
+    );
+    
+    // Extract the GST types
+    const gstTypes = recordsForDate.map(record => record.taxType);
+    setExistingGstTypes(gstTypes);
+    
+    // Update the form's tax type options
+    if (gstTypes.length > 0) {
+      // If the currently selected tax type is already in the list, show a warning
+      const currentTaxType = form.getFieldValue('taxType');
+      if (currentTaxType && gstTypes.includes(currentTaxType)) {
+        messageApi.warning(`${currentTaxType} already exists for ${formattedDate}. Please select another GST type.`);
+      }
     }
   };
 
@@ -173,6 +205,8 @@ const TaxCalculationPage = () => {
       if (response && response.data.success) {
         messageApi.success('Tax calculation added successfully!');
         form.resetFields();
+        setExistingGstTypes([]);
+        setSelectedDate(null);
         fetchTaxRecords(); // Refresh the list
       }
     } catch (error) {
@@ -205,9 +239,21 @@ const TaxCalculationPage = () => {
     }
   };
 
-  // Function to handle switching to individual records tab
-  const switchToIndividualTab = () => {
-    setActiveTab('1');
+  // Function to handle date change
+  const handleDateChange = (dates) => {
+    if (dates && dates[0]) {
+      checkExistingGstTypes(dates[0]);
+    } else {
+      setExistingGstTypes([]);
+      setSelectedDate(null);
+    }
+  };
+
+  // Function to handle tax type change
+  const handleTaxTypeChange = (value) => {
+    if (selectedDate && existingGstTypes.includes(value)) {
+      messageApi.warning(`${value} already exists for ${selectedDate}. Please select another GST type.`);
+    }
   };
 
   const detailColumns = [
@@ -309,12 +355,10 @@ const TaxCalculationPage = () => {
       title: 'Details',
       key: 'details',
       render: (_, record) => (
-        // Fix: Use a link that doesn't get hidden by aria-hidden
         <a 
           onClick={(e) => {
             e.preventDefault();
-            switchToIndividualTab();
-            // Could add filtering by date here if needed
+            setActiveTab('1');
           }}
         >
           View Details
@@ -394,6 +438,7 @@ const TaxCalculationPage = () => {
     <div style={{ padding: '20px' }}>
       {contextHolder}
       <Title level={2}>Tax Calculation</Title>
+      
       {errorMessage && (
         <Alert
           message="Error"
@@ -419,8 +464,21 @@ const TaxCalculationPage = () => {
                 label="Date Range"
                 rules={[{ required: true, message: 'Please select date range!' }]}
               >
-                <RangePicker style={{ width: '100%' }} />
+                <RangePicker 
+                  style={{ width: '100%' }} 
+                  onChange={handleDateChange}
+                />
               </Form.Item>
+              
+              {/* Display existing GST types for selected date */}
+              {existingGstTypes.length > 0 && (
+                <div style={{ marginBottom: '16px' }}>
+                  <span style={{ marginRight: '8px' }}>Existing GST types for {selectedDate}:</span>
+                  {existingGstTypes.map(type => (
+                    <Tag color="blue" key={type}>{type}</Tag>
+                  ))}
+                </div>
+              )}
             </Col>
             
             <Col span={4}>
@@ -474,12 +532,27 @@ const TaxCalculationPage = () => {
               <Form.Item
                 name="taxType"
                 label="Tax Type"
-                rules={[{ required: true, message: 'Please select tax type!' }]}
+                rules={[
+                  { required: true, message: 'Please select tax type!' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!selectedDate || !existingGstTypes.includes(value)) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(
+                        new Error(`${value} already exists for this date. Please select another GST type.`)
+                      );
+                    },
+                  }),
+                ]}
               >
-                <Select placeholder="Select tax type">
-                  <Option value="CGST">CGST</Option>
-                  <Option value="SGST">SGST</Option>
-                  <Option value="IGST">IGST</Option>
+                <Select 
+                  placeholder="Select tax type"
+                  onChange={handleTaxTypeChange}
+                >
+                  <Option value="CGST" disabled={existingGstTypes.includes('CGST')}>CGST</Option>
+                  <Option value="SGST" disabled={existingGstTypes.includes('SGST')}>SGST</Option>
+                  <Option value="IGST" disabled={existingGstTypes.includes('IGST')}>IGST</Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -507,7 +580,12 @@ const TaxCalculationPage = () => {
           </Row>
           
           <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading}>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              loading={loading}
+              disabled={selectedDate && existingGstTypes.includes(form.getFieldValue('taxType'))}
+            >
               Calculate Tax
             </Button>
           </Form.Item>
@@ -515,12 +593,11 @@ const TaxCalculationPage = () => {
       </Card>
       
       <Card>
-        {/* Updated Tabs component using items prop instead of TabPane */}
         <Tabs 
           activeKey={activeTab} 
           onChange={setActiveTab} 
           items={tabItems}
-          destroyInactiveTabPane={true} // This helps with accessibility by removing hidden content
+          destroyInactiveTabPane={true}
         />
       </Card>
       
