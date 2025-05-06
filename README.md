@@ -1,12 +1,31 @@
-# React + Vite
+# Tax Calculator – Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the frontend application for a Tax Calculator built using React.js. It allows users to input their income and deductions and calculates the applicable tax based on provided slabs.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Responsive UI built with React.js and Tailwind CSS
+- User-friendly form to input income and deductions
+- Real-time tax calculation based on backend API
+- Displays total tax, net income, and slab breakdown
 
-## Expanding the ESLint configuration
+## 🛠 Tech Stack
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- React.js
+- Tailwind CSS
+- Axios
+- JavaScript (ES6)
+
+## 🔧 Setup Instructions
+
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/DhanaBalan2001/Tax-Calculator-Frontend.git
+   
+2. Install dependencies:
+
+``npm install``
+
+3. Start the server:
+
+   ``npm start``
